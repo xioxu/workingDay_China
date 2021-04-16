@@ -7,6 +7,7 @@ const REG_VALID_YM = /^\d{6}$/;
 const MSG_WRONF_DATE = "无效的日期格式";
 
 var _holidayConf;
+var _dayCache={};
 
 function errorRes(message){
     return {
@@ -46,6 +47,11 @@ function getDayType(dayValue){
     };
     
     let dateStr = date.format(dayValue,DATE_FORMAT);
+    let datCached = _dayCache[dateStr];
+    if(datCached != undefined){
+        return datCached;
+    }
+
      let year =  dateStr.substring(0,4);
      let day =  dateStr.substring(4,8);
      var dayOfWeek = dayValue.getDay();
@@ -90,7 +96,9 @@ function getDayType(dayValue){
         }
     }
 
-    return dayInfo(isRestDay,isWeekend,restDesc);
+    datCached = dayInfo(isRestDay,isWeekend,restDesc);
+    _dayCache[dateStr] = datCached;
+    return datCached;
 }
 
 function isValidDate(dateStr){
