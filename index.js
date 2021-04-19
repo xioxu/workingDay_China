@@ -5,7 +5,7 @@ var bodyParser = require('body-parser')
 
 const fs = require('fs');
 const app = express()
-const port = 3004
+const port = process.env.PORT || 3004
 
 // parse application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: false }))
@@ -22,5 +22,5 @@ app.use('/calendar', function(){
 }());
 
 app.listen(port, () => {
-    console.log(`HuaweiClould Token Provider Service listening at http://localhost:${port}`)
+    console.log(`Calendar Service listening at http://localhost:${port}`)
   })

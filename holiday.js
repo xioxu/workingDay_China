@@ -36,7 +36,7 @@ function getHolidayConf(){
         return _holidayConf;
     }
 
-    var content = fs.readFileSync('./data/holiday.json');
+    var content = fs.readFileSync(__dirname  + '/data/holiday.json');
     _holidayConf = JSON.parse(content);
     return _holidayConf;
 }
