@@ -1,5 +1,6 @@
 const { time } = require('console');
 const date = require("./dateUtil");//require('date-and-time');
+const lunar= require("./lunarday");
 const fs = require('fs');
 const DATE_FORMAT = "YYYYMMDD";
 const REG_VALID_DATE = /^\d{8}$/;
@@ -23,11 +24,70 @@ function okRes(data){
     };
 }
 
-function dayInfo(isRestDay,isWeekend,restDesc){
+function getQinMingJieDate(fullYear) {
+    //清明节的日期是不固定的，规律是：闰年开始的前2年是4月4日，闰年开始的第3年和第4年是4月5日
+    if(isLeapYear(fullYear) || isLeapYear(fullYear -1)){
+        return '0404';
+    }
+    else{
+        return '0405';
+    }
+}
+//判断是否是闰年
+function isLeapYear (Year) {
+    if (((Year % 4)==0) && ((Year % 100)!=0) || ((Year % 400)==0)) {
+        return (true);
+    } else { return (false); }
+}
+
+//每年法定假日其实是11天，只是每年都会通过调休的方式把假期集中，因此需要识别出真正的法定假日
+function isLegalRestDay(dateStr,lunarDay){
+    var year = parseInt(dateStr.substring(0,4));
+    var qingming = getQinMingJieDate(year);
+
+    var solarDay = dateStr.substring(4,8);
+    if(solarDay === "0101"){
+        return true; //元旦
+    }
+
+    if(["正初一","正初二","正初三"].includes(lunarDay)){
+        return true; //春节
+    }
+
+    if(solarDay === qingming){
+        return true; //清明节
+    }
+
+    if(solarDay === "0501"){
+        return true; //劳动节
+    }
+
+    if(lunarDay === "五初五"){
+        return true; //端午节
+    }
+
+    if(lunarDay === "八十五"){
+        return true; //中秋节
+    }
+
+    if(["1001","1002","1003"].includes(solarDay)){
+        return true; //国庆节
+    }
+
+    return false;
+}
+
+function dayInfo(isRestDay,isWeekend,restDesc,dayStr){
+    var lunarInfo = lunar.convert(dayStr);
+    var ludayDay = lunarInfo.lunarMonth + lunarInfo.lunarDay;
     return  {
+        "date":dayStr,
+        "lunarDay": ludayDay,
         "isWeekend": isWeekend,
         "isRestday": isRestDay,
-        "restDesc": restDesc
+        "isLegalRestDay": isLegalRestDay(dayStr,ludayDay),
+        "restDesc": restDesc,
+        "desc":restDesc
     };
 }
 
@@ -96,7 +156,7 @@ function getDayType(dayValue){
         }
     }
 
-    datCached = dayInfo(isRestDay,isWeekend,restDesc);
+    datCached = dayInfo(isRestDay,isWeekend,restDesc,dateStr);
     _dayCache[dateStr] = datCached;
     return datCached;
 }
@@ -163,12 +223,9 @@ function getDayInfo(startDate){
 
     var start = date.parse(startDate, DATE_FORMAT); 
     let dayDetail = getDayType(start);
+    dayDetail.desc = dayDetail.restDesc
 
-    return  okRes({
-        "isRestDay":dayDetail.isRestday,
-        "isWeekend": dayDetail.isWeekend,
-        "desc":dayDetail.restDesc
-    });
+    return  okRes(dayDetail);
 }
 function getMonthRestDays(yearAndMonth){
    if(!yearAndMonth || !REG_VALID_YM.test(yearAndMonth)){
@@ -183,10 +240,8 @@ function getMonthRestDays(yearAndMonth){
    while(true){
        let dateDetail = getDayType(day);
        if(dateDetail.isRestday){
-           let r = {
-               "date":date.format(day,DATE_FORMAT),
-               "desc":dateDetail.restDesc
-           };
+           let r = dateDetail;
+           r.desc = dateDetail.restDesc;
            restDays.push(r)
        }else if(dateDetail.isWeekend){
             workButWeekend.push(date.format(day,DATE_FORMAT));
