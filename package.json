@@ -1,8 +1,10 @@
 {
   "scripts": {
     "start": "node index.js"
-} ,
+  },
   "dependencies": {
-    "express": "^4.17.1"
+    "body-parser": "^1.20.2",
+    "express": "^4.17.1",
+    "ical-generator": "^1.1.1"
   }
 }

@@ -1,7 +1,13 @@
 const { time } = require('console');
 const date = require("./dateUtil");//require('date-and-time');
 const lunar= require("./lunarday");
+const xaday = require("./xaday");
 const fs = require('fs');
+//import ical, {ICalCalendarMethod} from 'ical-generator';
+const ical = require('ical-generator');
+ 
+
+
 const DATE_FORMAT = "YYYYMMDD";
 const REG_VALID_DATE = /^\d{8}$/;
 const REG_VALID_YM = /^\d{6}$/;
@@ -216,6 +222,8 @@ function getWorkingDays(startDate,endDate){
   });
 }
 
+
+
 function getDayInfo(startDate){
     if(!isValidDate(startDate)){
         return errorRes(MSG_WRONF_DATE);
@@ -321,6 +329,25 @@ function getEndDay(startDate,workingDays){
       });
 }
 
+
+function getFestivals(year) {
+    // 节日数据数组，每个节日包含农历月、日和节日名称
+    const festivalsData = xaday.getDays();
+
+    // 转换农历日期到公历日期，并构建节日对象数组
+    const festivals = festivalsData.map(festival => {
+        const solarDate = lunar.lunarToSolar(year, festival.lunarMonth, festival.lunarDay);
+        return {
+            date: new Date(solarDate.year, solarDate.month - 1, solarDate.day),
+            name: festival.name
+        };
+    });
+
+    return festivals;
+}
+
+ 
+
 function regist(router){
     router.post('/workingdays', (req, res) => {
         res.json(getWorkingDays(req.body.start,req.body.end));
@@ -337,6 +364,38 @@ function regist(router){
     
     router.get('/day/:day', (req, res) => {
         res.json(getDayInfo(req.params.day));
+    });
+
+    router.get('/xamiaohui/:year?', (req, res) => {
+        var year = parseInt(req.params.year);
+        //if parameter year is empty we can use the current year
+        if (isNaN(year)) {
+            year = (new Date()).getFullYear();
+        }
+
+        var calendar = ical({domain:"example.com", name: `西安周边庙会(${year})`, timezone: 'Asia/Shanghai' });
+
+        const festivals = getFestivals(year);
+        //remove duplicate in festivals through if the name, lunarMonth, lunarDay is same
+
+        var map={};
+        var key = "";
+        festivals.forEach(festival => {
+            key = festival.name + festival.date.getMonth() + festival.date.getDate();
+            if(map[key] == undefined){
+                map[key] = festival;
+                calendar.createEvent({
+                    start: festival.date,
+                    end: new Date(festival.date.getTime() + 24 * 60 * 60 * 1000), // 结束日期为开始日期的次日,
+                    summary: festival.name,
+                    description: festival.name,
+                });
+            }
+        });
+    
+        res.setHeader('Content-Type', 'text/calendar;charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="chinese_festivals_${year}.ics"`);
+        res.send(calendar.toString());
     });
 }
 

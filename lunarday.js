@@ -181,6 +181,55 @@ function getDiZhi(ly) {
 }
 
 
+// 公历转农历函数
+exports.lunarToSolar=function(ly, lm, ld) {
+  let leapMonth = hasLeapMonth(lunarYearArr[ly - 1949]);
+
+  // 如果有闰月，并且输入的月份是闰月，则需要特殊处理
+  if (leapMonth && lm === leapMonth) {
+    let daysBeforeLeapMonth = 0;
+    for (let i = 0; i < leapMonth - 1; i++) {
+      daysBeforeLeapMonth += lunarYearMonths(lunarYearArr[ly - 1949])[i];
+    }
+    if (ld <= daysBeforeLeapMonth) {
+      // 输入的日期在闰月之前
+      return {
+        year: ly,
+        month: lm,
+        day: ld
+      };
+    } else {
+      // 输入的日期在闰月之后，需要减去闰月的天数
+      ld -= leapMonthDays(lunarYearArr[ly - 1949]);
+    }
+  }
+
+  // 确定公历基准日期
+  let baseDate = new Date(1949, 0, 29); // 1949年1月29日是农历1949年1月1日
+
+  // 根据输入的农历日期，计算相差的天数
+  let daySpan = 0;
+  for (let i = 0; i < ly - 1949; i++) {
+    daySpan += lunarYearDays(lunarYearArr[i]);
+  }
+  for (let i = 0; i < lm - 1; i++) {
+    daySpan += lunarYearMonths(lunarYearArr[ly - 1949])[i];
+  }
+  daySpan += ld - 1; // 输入的日期从1开始，需要减1
+
+  // 根据相差的天数计算对应的公历日期
+  baseDate.setDate(baseDate.getDate() + daySpan);
+  let solarYear = baseDate.getFullYear();
+  let solarMonth = baseDate.getMonth() + 1; // 月份从0开始，需要加1
+  let solarDay = baseDate.getDate();
+
+  return {
+    year: solarYear,
+    month: solarMonth,
+    day: solarDay
+  };
+}
+
 exports.convert=function(dateStr){
     var year = dateStr.substring(0,4);
     var month = dateStr.substring(4,6);
