@@ -620,8 +620,7 @@ exports.getDays=function(){
     { lunarMonth: 12, lunarDay: 8, name: '西乡县午子观庙会'},
     
     { lunarMonth: 2, lunarDay: 2, name: '南郑县山乡牛马会' },
-   
-   
+
     ];
 
 
