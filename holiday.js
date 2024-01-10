@@ -337,8 +337,15 @@ function getFestivals(year) {
     // 转换农历日期到公历日期，并构建节日对象数组
     const festivals = festivalsData.map(festival => {
         const solarDate = lunar.lunarToSolar(year, festival.lunarMonth, festival.lunarDay);
+        var solarEndDate;
+        if(festival.endLunarMonth != undefined){
+              solarEndDate = lunar.lunarToSolar(year, festival.endLunarMonth, festival.endLunarDay);
+        }
+
+        var startDate = new Date(solarDate.year, solarDate.month - 1, solarDate.day);
         return {
-            date: new Date(solarDate.year, solarDate.month - 1, solarDate.day),
+            date: startDate,
+            endDate: solarEndDate == undefined ? new Date(startDate.getTime() + 24 * 60 * 60 * 1000) : new Date(solarEndDate.year, solarEndDate.month - 1, solarEndDate.day),
             name: festival.name
         };
     });
@@ -380,13 +387,14 @@ function regist(router){
 
         var map={};
         var key = "";
+        var nidx = 0;
         festivals.forEach(festival => {
             key = festival.name + festival.date.getMonth() + festival.date.getDate();
             if(map[key] == undefined){
                 map[key] = festival;
                 calendar.createEvent({
                     start: festival.date,
-                    end: new Date(festival.date.getTime() + 24 * 60 * 60 * 1000), // 结束日期为开始日期的次日,
+                    end: festival.endDate,
                     summary: festival.name,
                     description: festival.name,
                 });
